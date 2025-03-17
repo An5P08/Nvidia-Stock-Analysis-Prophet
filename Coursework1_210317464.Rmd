@@ -1,0 +1,241 @@
+---
+title: "**Stock Market Forecasting**"
+subtitle: "**Time Series Analysis of Nvidia Stock**"
+author: "**Ansh Patel**"
+date: "**March 2025**"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: journal
+    highlight: zenburn
+---
+
+```{r, echo=FALSE}
+# This code will display the QMUL logo at the top right of the page
+# Do not change this code
+htmltools::img(src = knitr::image_uri("images/QMlogo.png"),
+               alt = 'logo',
+               style = 'position:absolute; top:0; right:0; padding:10px; width:20%;')
+
+knitr::include_graphics("images/NvidiaLogo.png")
+
+```
+
+# **1.Introduction**
+
+Who is Nvidia ? Nvidia is a tech company that specialises in graphics processing and artificial intelligence. Since being founded in 1993, it has played a huge role in developing gaming technology, AI research, and high-performance computing, influencing a wide range of industries.
+
+```{r, echo=FALSE, out.width="45%"}
+knitr::include_graphics("images/Blackwell.jpg")
+```
+
+### **Why Nvidia ?**
+
+I have been interested in Nvidia for some time, particularly because of its role in shaping the future of AI and high-performance computing. During my placement at Mercedes-Benz Financial Services, I developed an interest in investing and began analysing market trends more closely. Nvidia stood out as a company that has consistently driven innovation, especially with its Blackwell architecture, which has made its GPUs significantly more powerful and efficient for AI applications.
+
+Beyond just stock performance, this time series reflects how technological advancements influence financial markets. Analysing Nvidia’s stock allows me to explore the intersection of AI, investing, and market trends, reinforcing my passion for both technology and financial analysis.
+
+### **What is the benefit of modelling Nvidia’s stock?**
+
+To understand why it's beneficial we need to look at how stock prices behave and why they matter to investors.
+
+The stock is highly volatile, driven by advancements in AI hardware, market demand and broader economic conditions. So modelling it's price movement can help investors identify trends and make more informed decisions about buying/selling. By analysing historical data, investors can gain an insight into patterns that indicate potential growth or risk. A well-structured model can help investors manage risk, navigate uncertainty and take advantage of opportunities in this rapidly evolving industry.
+
+## **Dataset Overview**
+
+**Source:** Yahoo Finance
+
+**Date Range:** 01/01/2020 - 31/12/2024
+
+**Frequency:** Daily
+
+## **Conversion to Dataframe**
+
+```{r,}
+library(prophet)
+nvda_raw <- read.csv("data/NVDA_data.csv", stringsAsFactors = FALSE)
+```
+
+This reads the Nvidia stock price data from a CSV file
+
+```{r,}
+# Convert the Date column to Date object
+nvda_raw$Date <- as.Date(nvda_raw$Date, format = "%d/%m/%Y")
+nvda_df <- data.frame(
+  ds = zoo::as.yearmon(nvda_raw$Date),
+  y  = nvda_raw$Close
+)
+```
+
+This converts the time series for Nvidia into a dataframe
+
+```{r,}
+# Check the first few rows to confirm structure
+head(nvda_df)
+```
+
+To check if R has interpreted the data correctly we can use head() to check the first 6 lines are printed
+
+## **Objective of the Project:**
+
+Our aim is to use past data from Nvidia's performance to help us track the future performance of the stock in 2025.This analysis will help to identify the prophet model's strengths and limitations. It will give a clearer understanding of the uncertainty inherent in the predictions. In the end, this evaluation will show whether further refinements are needed for more reliable investment decision-making.
+
+## **Prophet Forecasting Software:**
+
+The Prophet software is a time series forecasting tool that has been created by Facebook (Meta) that essentially makes predicting future trends easy. It breaks down data into 3 parts: trends that capture long-term patterns, seasonality that accounts for recurring cycles for example weekly/ yearly trends and any external effects such as holidays that can impact the data.
+
+Formula:
+
+$y(t) = g(t) + s(t) + h(t) + \epsilon_t$
+
+where:
+
+-   $g(t)$ represents the **trend** component.
+-   $s(t)$ captures **seasonality** using Fourier series.
+-   $h(t)$ models **holiday effects**.
+-   $\epsilon_t$ is the **residual error**, accounting for noise.
+
+# **2.Decomposition**
+
+First we apply decomposition by breaking down Nvidia's stock price into it's trend, seasonality and residual components to better understand the patterns. After we've analysed the factors, we apply the Prophet model to forecast the stock prices for the next eight quarters. This essentially involves structuring the data, building a forecast and then visuaising the historical trends and the future predictions. We then examine Prophet’s breakdown of key components before concluding with a linear regression analysis to assess the overall growth and reliability of the forecast.
+
+```{r, echo=FALSE}
+stockprice <- ts(nvda_raw$Close, start = c(2020, 1), frequency = 4)
+```
+
+```{r, echo=TRUE}
+plot(decompose(stockprice))
+```
+
+## **Analysis**
+
+**Observed:** This shows the actual stock price over time. Nvidia’s stock has generally been rising, but there are clear periods of volatility, likely influenced by market trends, product launches and investor sentiment.
+
+**Trend:** The trend line highlights the overall direction of Nvidia’s stock. There is a steady upward movement, with sharp increases at certain points. This could be linked to key events, such as the release of new GPUs or growth in AI-driven demand.
+
+**Seasonality:** The seasonality component reveals short term, repeating patterns. These fluctuations might be tied to quarterly earnings reports, product launches or other regular market events. Unlike traditional seasonal trends in industries like retail, stock market seasonality is often shaped by investor behaviour.
+
+**Residual (Random Noise):** This captures what is left after removing the trend and seasonality. The later periods show higher fluctuations, suggesting that Nvidia’s stock has become more unpredictable, possibly due to external economic factors or shifting investor confidence.
+
+# **3.Forecast Analysis**
+
+> <font size="5">⚠️</font> **Important Considerations**
+>
+> -   Before we begin our analysis, **REMEMBER** that Prophet assumes past patterns will continue into the future. However, unexpected market shocks can disrupt these trends.
+>
+> -   The forecast should be interpreted with confidence intervals to assess uncertainty
+
+```{r, message=FALSE, warning=FALSE}
+library(prophet)
+model = prophet(nvda_df)   
+Futuredataframe = make_future_dataframe(model, periods = 8, freq = "quarter")
+```
+
+In this code, I first load the Prophet library then fit the Prophet model on the dataset. Then extend the timeline by 8 quarters so that it can generate new forecastss for future dates.
+
+```{r, message=FALSE, warning=FALSE}
+predictions = predict(model, Futuredataframe)
+plot(model, predictions)
+```
+
+Lastly, using the predict() function i generated the forecasts and plotted a visual of the dataset
+
+Remember:
+
+ **ds = Year** 
+ 
+ **y = Price**
+
+This graph basically shows the forecast of Nvidia's stock price as modelled by Prophet model. It’s divided into three main parts:
+
+**Historical Data (Black Dots)**: These represent the actual stock prices recorded from 2020 to 2024.
+
+**Forecast (Blue Line):** This line shows the predicted trend for Nvidia's stock, extending eight quarters into the future.
+
+**Uncertainty Intervals (Shaded Area):** The shaded area around the blue line reflects the uncertainty in the forecast. As the forecast moves further into the future, the uncertainty becomes larger.
+
+**Overall, the graph provides a clear picture of past performance and offers an insight into future expectations as well as some uncertainty levels.**
+
+## **Prophet Model Components**
+
+```{r}
+prophet_plot_components(model, predictions)
+```
+
+The trend shows that Nvidia’s stock stayed fairly steady until 2023, then started rising sharply.
+
+The seasonality suggests a pattern where stock prices tend to rise around mid-year and dip towards October, possibly due to earnings reports or market trends. While the model picks up on key movements, it’s important to be cautious as stock prices can be unpredictable.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+# Convert the Date column to a numeric index for regression
+nvda_raw$time_index <- as.numeric(nvda_raw$Date)
+
+# Fit a linear regression model
+lm_model <- lm(Close ~ time_index, data = nvda_raw)
+
+# Display model summary
+summary(lm_model)
+```
+
+# **Regression Analysis Summary**
+
+From the summary produced, we can extract the following key insights:
+
+*Nvidia’s stock price increases by **0.0589** per time unit on average.*
+
+*standard error is **0.001187**, which is very low, indicating a highly precise estimate*
+
+*p-value **\<2e-16** is much smaller than 0.05, meaning the trend is statistically significant, and time has a strong impact on stock price*
+
+*The R-squared value of **0.6622** means that time explains approx 66% of the changes in Nvidia’s stock price, suggesting taht there's a strong correlation.*
+
+# **Interactive Forecast Plot**
+
+```{r}
+library(dygraphs)
+
+dyplot.prophet(model, predictions, xlab = "Years", ylab = "Nvidia Stock Price (USD)")
+```
+
+This is a more interactive plot that can be used to dive deeper into historical data and future predictions. If you hover over the black dots then a small box will appear in the top right corner that includes the date, actual price and the predicted price of the stock. Looking at the plot, the blue forecast line follows the overall trend pretty well, but it doesn’t quite capture the short-term ups and downs of the actual stock prices. This makes sense because Prophet is designed to smooth out fluctuations, so it might overestimate or underestimate certain price movements.
+
+# **4.Last 30 Day Average**
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+# Load necessary libraries
+library(plotly)
+library(quantmod)
+
+
+# Download Nvidia stock data from Yahoo Finance
+invisible(getSymbols("NVDA", src = 'yahoo'))
+
+# Convert to DataFrame and keep only the last 30 days for clarity
+nvda_df <- data.frame(Date = index(NVDA), coredata(NVDA))
+nvda_df <- tail(nvda_df, 30)  # Show only the most recent 30 days
+
+# Create candlestick chart
+fig <- nvda_df %>% plot_ly(
+  x = ~Date, type = "candlestick",
+  open = ~NVDA.Open, close = ~NVDA.Close,
+  high = ~NVDA.High, low = ~NVDA.Low
+)
+
+# Add title and layout adjustments
+fig <- fig %>% layout(title = "Nvidia Candle Stick Chart")
+
+# Display the chart
+fig
+```
+
+The candlestick chart gives a clear view of how Nvidia’s stock has moved over the last 30 days. Each candlestick represents a trading day, showing whether the price went up or down. Green candles mean the stock closed higher than it opened, showing buyers were in control, while red candles mean it closed lower, suggesting sellers had the upper hand. The thin lines above and below the candles show how much the price moved during the day, with longer wicks meaning higher volatility.
+
+Looking at the trend, Nvidia’s stock started strong with a steady rise, but then faced a sharp decline, with multiple red candles appearing. This suggests a period of selling pressure, possibly due to external market factors or investor reactions. Towards the end of the period, we see signs of recovery, as more green candles appear, indicating potential buying interest. This chart helps identify trends, reversals and key price levels, giving a better sense of Nvidia’s recent market behaviour.
+
+# **5.References**
+
+-   Nvidia Website: <https://www.nvidia.com/en-gb/>
+-   Nvidia Stock Information: <https://uk.finance.yahoo.com/quote/NVDA/>
+-   Candlestick charts in R: <https://plotly.com/r/candlestick-charts/>
